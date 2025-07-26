@@ -1,13 +1,30 @@
-import { Configuration, OpenAIApi } from 'openai';
+import { useState } from 'react';
+import axios from 'axios';
 
-const config = new Configuration({ apiKey: process.env.OPENAI_API_KEY });
-const openai = new OpenAIApi(config);
+export default function Chat() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
 
-export default async function handler(req, res) {
-  const { messages } = req.body;
-  const completion = await openai.createChatCompletion({
-    model: 'gpt-3.5-turbo',
-    messages,
-  });
-  res.status(200).json({ reply: completion.data.choices[0].message });
+  async function sendMessage() {
+    const userMessage = { role: 'user', content: input };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setInput('');
+
+    const res = await axios.post('/api/chat', { messages: newMessages });
+    setMessages([...newMessages, res.data.reply]);
+  }
+
+  return (
+    <div style={{ padding: '2rem' }}>
+      <h2>Chat with your AI Girlfriend 💬</h2>
+      <div style={{ minHeight: '200px', marginBottom: '1rem' }}>
+        {messages.map((msg, i) => (
+          <p key={i}><strong>{msg.role}:</strong> {msg.content}</p>
+        ))}
+      </div>
+      <input value={input} onChange={e => setInput(e.target.value)} placeholder="Say something..." />
+      <button onClick={sendMessage}>Send</button>
+    </div>
+  );
 }
